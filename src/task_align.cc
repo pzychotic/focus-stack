@@ -73,7 +73,10 @@ void Task_Align::task()
     m_roi = m_srcgray->valid_area();
 
     // Perform low resolution initial geometric alignment
-    match_transform(256, true);
+    if (!(m_flags & FocusStack::ALIGN_NO_TRANSFORM))
+    {
+      match_transform( 256, true );
+    }
 
     // Perform grayscale brightness alignment
     if (!(m_flags & FocusStack::ALIGN_NO_CONTRAST))
@@ -81,23 +84,26 @@ void Task_Align::task()
       match_contrast();
     }
 
-    // Perform color/whit balance alignment
+    // Perform color/white balance alignment
     if (!(m_flags & FocusStack::ALIGN_NO_WHITEBALANCE) && m_srccolor->img().channels() == 3)
     {
       match_whitebalance();
     }
 
     // Finally, do the high resolution geometric alignment step
-    if (m_flags & FocusStack::ALIGN_FULL_RESOLUTION)
+    if (!(m_flags & FocusStack::ALIGN_NO_TRANSFORM))
     {
-      int res = std::max(m_srccolor->img().cols, m_srccolor->img().rows);
-      match_transform(res, false);
-    }
-    else
-    {
-      // By default limit image resolution used in alignment to 2k.
-      // Because this uses subpixel positioning, higher resolution provides little benefit.
-      match_transform(2048, false);
+      if (m_flags & FocusStack::ALIGN_FULL_RESOLUTION)
+      {
+        int res = std::max(m_srccolor->img().cols, m_srccolor->img().rows);
+        match_transform(res, false);
+      }
+      else
+      {
+        // By default limit image resolution used in alignment to 2k.
+        // Because this uses subpixel positioning, higher resolution provides little benefit.
+        match_transform(2048, false);
+      }
     }
 
     // The image is now aligned against the neighbour image.
